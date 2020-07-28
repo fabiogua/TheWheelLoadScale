@@ -115,10 +115,11 @@ void gotChar(char command) { // -> incoming protocoll parser
             saveScaleFactor();
             break;
         }
-        case 'r': { // also including t -> tare -> no break
+        case 'r': {
             loadcell.set_scale();
             scaleFactor = 1.0;
             saveScaleFactor();
+            break;
         }
         case 't':
             loadcell.tare();
