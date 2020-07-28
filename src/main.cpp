@@ -1,6 +1,8 @@
 #include "Arduino.h"
 #include "Steroido.h"
 
+#define SW_VERSION "V0.0.1"
+
 #if defined(C_DISPLAY) && defined(C_SCALE)
     #error "Only one Device can be compiled at a time (?!?)"
 #endif
