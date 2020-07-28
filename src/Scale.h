@@ -12,13 +12,13 @@
 #define LOADCELL_TARE_AFTER_TIME 5 // s
 
 //     SerialComm
-//#define BT_SERIAL_TX PA_2
-//#define BT_SERIAL_RX PA_3
+//#define BT_SERIAL_TX PA_2 -> Serial2
+//#define BT_SERIAL_RX PA_3 -> Serial2
 #define BT_SERIAL_BAUD 38400
 
 //   Settings
 #define SENDING_INTERVAL 200 // ms
-#define MIN_BOUNDARY_TO_CHANGE_CAL_SIGN 1
+#define MIN_BOUNDARY_TO_CHANGE_CAL_SIGN 1 // if scaleFactor lower than this, invert -> 0.99... would result in -1
 #define CALIBRATION_INCREASE_FACTOR 0.05 // %
 
 /*
@@ -104,13 +104,27 @@ inline void saveScaleFactor() {
 void gotChar(char command) { // -> incoming protocoll parser
     switch(command) {
         case '+': {
-            scaleFactor *= CALIBRATION_INCREASE_FACTOR;
+            if (scaleFactor < 0) {
+                scaleFactor *= CALIBRATION_INCREASE_FACTOR;
+                if (scaleFactor > (-1 * MIN_BOUNDARY_TO_CHANGE_CAL_SIGN))
+                    scaleFactor = MIN_BOUNDARY_TO_CHANGE_CAL_SIGN;
+            } else {
+                scaleFactor *= CALIBRATION_INCREASE_FACTOR;
+            }
+
             loadcell.set_scale(scaleFactor);
             saveScaleFactor();
             break;
         }
         case '-': {
-            scaleFactor *= (-1 * CALIBRATION_INCREASE_FACTOR);
+            if (scaleFactor > 0) {
+                scaleFactor *= (-1 * CALIBRATION_INCREASE_FACTOR);
+                if (scaleFactor < MIN_BOUNDARY_TO_CHANGE_CAL_SIGN)
+                    scaleFactor = (-1 * CALIBRATION_INCREASE_FACTOR);
+            } else {
+                scaleFactor *= (-1 * CALIBRATION_INCREASE_FACTOR);
+            }
+
             loadcell.set_scale(scaleFactor);
             saveScaleFactor();
             break;
