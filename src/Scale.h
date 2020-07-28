@@ -12,22 +12,25 @@
 #define LOADCELL_TARE_AFTER_TIME 5 // s
 
 //     SerialComm
-//#define BT_SERIAL_TX PA_2 -> Serial2
-//#define BT_SERIAL_RX PA_3 -> Serial2
+#define BT_SERIAL_TX PA_9
+#define BT_SERIAL_RX PA_10
 #define BT_SERIAL_BAUD 38400
 
 //   Settings
 #define SENDING_INTERVAL 200 // ms
 #define MIN_BOUNDARY_TO_CHANGE_CAL_SIGN 1 // if scaleFactor lower than this, invert -> 0.99... would result in -1
-#define CALIBRATION_INCREASE_FACTOR 0.05 // %
+#define INIT_CALIBRATION_INCREASE_FACTOR 0.05 // %
+#define CALIBRATION_FACTOR_INCREMENT 0.1 // %
 
 /*
     Protocoll:
         Receiving
             One Char == One Command (over Serial)
 
-            + == Add 5% to calibration
-            - == Remove 5% from calibration
+            + == Add X% to calibration
+            - == Remove X% from calibration
+            u == Add 10% to calibration factor
+            d == Remove 10% from calibration factor
             t == Tare now
             r == Reset -> Calibration == 1 -> EEPROM Reset
             p == Toggle PC Output
@@ -35,10 +38,11 @@
         Submitting
             Sending in a sentence all Info at once
 
-            W[-]X.XC[-]X.X\n
+            W[-]X.XC[-]X.XFX.X\n
 
             W == Weight in g, X.X is the Number (size not defined) with optional sign [-]
             C == Calibration factor, X.X is the Number (size not defined) with optional sign [-]
+            F == Factor for calibration factor setting
             \n == new Line/End of sentence
 */
 
@@ -47,10 +51,12 @@ enum eepromAddresses : uint16_t {
 };
 
 // Global Vars
+HardwareSerial SerialBT(BT_SERIAL_RX, BT_SERIAL_TX);
 HX711 loadcell;
 Timer sendingTimer;
 float scaleFactor = 1;
 bool pcOutput = false;
+float calibrationIncreaseFactor = INIT_CALIBRATION_INCREASE_FACTOR;
 
 // Functions
 void sendSentence();
@@ -70,7 +76,7 @@ void setup() {
     loadcell.tare();
 
     // Start Serial Bluetooth Communication
-    Serial2.begin(BT_SERIAL_BAUD);
+    SerialBT.begin(BT_SERIAL_BAUD);
 
     // Begin sending Timer
     sendingTimer.start();
@@ -79,12 +85,12 @@ void setup() {
 
 void loop() {
     // Receiving BT
-    if (Serial2.available()) {
-        gotChar(Serial2.read());
+    while (SerialBT.available()) {
+        gotChar(SerialBT.read());
     }
 
     // Receiving PC
-    if (Serial.available()) {
+    while (Serial.available()) {
         gotChar(Serial.read());
     }
 
@@ -105,11 +111,11 @@ void gotChar(char command) { // -> incoming protocoll parser
     switch(command) {
         case '+': {
             if (scaleFactor < 0) {
-                scaleFactor *= CALIBRATION_INCREASE_FACTOR;
+                scaleFactor -= scaleFactor * calibrationIncreaseFactor;
                 if (scaleFactor > (-1 * MIN_BOUNDARY_TO_CHANGE_CAL_SIGN))
                     scaleFactor = MIN_BOUNDARY_TO_CHANGE_CAL_SIGN;
             } else {
-                scaleFactor *= CALIBRATION_INCREASE_FACTOR;
+                scaleFactor += scaleFactor * calibrationIncreaseFactor;
             }
 
             loadcell.set_scale(scaleFactor);
@@ -118,21 +124,28 @@ void gotChar(char command) { // -> incoming protocoll parser
         }
         case '-': {
             if (scaleFactor > 0) {
-                scaleFactor *= (-1 * CALIBRATION_INCREASE_FACTOR);
+                scaleFactor -= scaleFactor * calibrationIncreaseFactor;
                 if (scaleFactor < MIN_BOUNDARY_TO_CHANGE_CAL_SIGN)
-                    scaleFactor = (-1 * CALIBRATION_INCREASE_FACTOR);
+                    scaleFactor = -1 * MIN_BOUNDARY_TO_CHANGE_CAL_SIGN;
             } else {
-                scaleFactor *= (-1 * CALIBRATION_INCREASE_FACTOR);
+                scaleFactor += scaleFactor * calibrationIncreaseFactor;
             }
 
             loadcell.set_scale(scaleFactor);
             saveScaleFactor();
             break;
         }
+        case 'u':
+            calibrationIncreaseFactor += calibrationIncreaseFactor * CALIBRATION_FACTOR_INCREMENT;
+            break;
+        case 'd':
+            calibrationIncreaseFactor -= calibrationIncreaseFactor * CALIBRATION_FACTOR_INCREMENT;
+            break;
         case 'r': {
             loadcell.set_scale();
             scaleFactor = 1.0;
             saveScaleFactor();
+            calibrationIncreaseFactor = INIT_CALIBRATION_INCREASE_FACTOR;
             break;
         }
         case 't':
@@ -149,10 +162,10 @@ void sendSentence() {
 
     // Prep sentence
     char buffer[100];
-    sprintf (buffer, "W%fC%f\n", gotGramms, scaleFactor);
+    sprintf (buffer, "W%fC%fF%f\n", gotGramms, scaleFactor, calibrationIncreaseFactor);
 
     // Send over BT
-    Serial2.print(buffer);
+    SerialBT.print(buffer);
 
     if (pcOutput) {
         // Send optionally to PC too
