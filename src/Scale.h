@@ -105,11 +105,13 @@ void gotChar(char command) { // -> incoming protocoll parser
     switch(command) {
         case '+': {
             scaleFactor *= CALIBRATION_INCREASE_FACTOR;
+            loadcell.set_scale(scaleFactor);
             saveScaleFactor();
             break;
         }
         case '-': {
             scaleFactor *= (-1 * CALIBRATION_INCREASE_FACTOR);
+            loadcell.set_scale(scaleFactor);
             saveScaleFactor();
             break;
         }
