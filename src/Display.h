@@ -6,6 +6,7 @@
 #include "drawIt.h"
 #include "font_Arial.h"
 #include "Graphics/ElementAppearance.h"
+#include "AltSoftSerial.h"
 #include "SoftwareSerial.h"
 #include "Pins.h"
 
@@ -37,9 +38,7 @@ drawIt::button<Display> reset(display,   1, 281, 118,  38); // bottom left
 drawIt::button<Display> tare(display,  121, 281, 118,  38); // bottom right
 
 // Serial
-#define SerialFL Serial1
-SoftwareSerial SerialFR(SERIAL_FR_RX, SERIAL_FR_TX);
-SoftwareSerial SerialRL(SERIAL_RL_RX, SERIAL_RL_TX);
+AltSoftSerial SerialRL;
 SoftwareSerial SerialRR(SERIAL_RR_RX, SERIAL_RR_TX);
 
 // Functions
