@@ -11,7 +11,6 @@
 
 // Configuration
 //   Timings
-#define LOGO_BUILDUP_TIME 1 // ms/segment
 #define LOOP_WAIT_TIME 100 // ms -> 1/Display refresh rate
 
 //   Buffers
@@ -415,28 +414,24 @@ void setup() {
     for (uint8_t i = 17; i != 0 && !stopTouched; --i) {
         display.drawBitmap(0, 48, tigerIcon, 240, 224, Display::color565(i*15, i*15, i*15));
         stopTouched = touch.touched();
-        delay(LOGO_BUILDUP_TIME);
     }
 
     // Black -> Magenta
     for (uint8_t i = 0; i != 18 && !stopTouched; ++i) {
         display.drawBitmap(0, 48, tigerIcon, 240, 224, Display::color565(i*15, 0, i*15));
         stopTouched = touch.touched();
-        delay(LOGO_BUILDUP_TIME);
     }
 
     // Magenta -> Black
     for (uint8_t i = 17; i != 0 && !stopTouched; --i) {
         display.drawBitmap(0, 48, tigerIcon, 240, 224, Display::color565(i*15, 0, i*15));
         stopTouched = touch.touched();
-        delay(LOGO_BUILDUP_TIME);
     }
 
     // Black -> White
     for (uint8_t i = 0; i != 18 && !stopTouched; ++i) {
         display.drawBitmap(0, 48, tigerIcon, 240, 224, Display::color565(i*15, i*15, i*15));
         stopTouched = touch.touched();
-        delay(LOGO_BUILDUP_TIME);
     }
 
     printf("Starting Display\n");
