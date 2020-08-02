@@ -8,7 +8,8 @@
 #include "Graphics/ElementAppearance.h"
 #include "AltSoftSerial.h"
 #include "SoftwareSerial.h"
-#include "Pins.h"
+#include "DisplayPins.h"
+#include "StreamSwitch/StreamReceiver.h"
 
 // Configuration
 //   Timings
@@ -39,7 +40,10 @@ drawIt::button<Display> tare(display,  121, 281, 118,  38); // bottom right
 
 // Serial
 AltSoftSerial SerialRL;
-SoftwareSerial SerialRR(SERIAL_RR_RX, SERIAL_RR_TX);
+// SimpleStreams (from Serial)
+SimpleStreamAdapter streamFR(SerialFR);
+SimpleStreamAdapter streamRL(SerialRL);
+StreamReceiver<2> streamReceiver(SerialReceiver);
 
 // Functions
 void hideAll();
@@ -58,7 +62,7 @@ class WheelScale {
         _touchArea.changeLength(240/2, 320/2);
     }
 
-    void setStream(Stream* stream) {
+    void setStream(ISimpleStream* stream) {
         _stream = stream;
     }
 
@@ -164,7 +168,7 @@ class WheelScale {
    private:
     String _name;
     drawIt::touchArea _touchArea;
-    Stream* _stream = nullptr;
+    ISimpleStream* _stream = nullptr;
     char _streamReadBuffer[STREAM_INPUT_BUFFER_LEN];
     uint16_t currentBufferSize = 0;
 
@@ -260,9 +264,9 @@ class WheelScale {
 
     bool checkNaN(uint16_t start, uint16_t end) {
         if (end - start == 2) {
-            if (_streamReadBuffer[start] == 'N' &&
+            if (_streamReadBuffer[start] == 'n' &&
                 _streamReadBuffer[start + 1] == 'a' &&
-                _streamReadBuffer[start + 2] == 'N')
+                _streamReadBuffer[start + 2] == 'n')
                 return true;
         }
 
@@ -444,26 +448,27 @@ void setup() {
     tare.autoDraw(true);
     reset.autoDraw(true);
 
+    // Serial begin's
+    SerialReceiver.begin(BT_SERIAL_BAUD);
+    SerialFR.begin(BT_SERIAL_BAUD);
+    SerialRL.begin(BT_SERIAL_BAUD);
+
     // Scale Displays (All Overview) Positions
     wheelScales[0].applyPositionOffset(0, 0);
     wheelScales[0].setName("Front Left");
-    wheelScales[0].setStream(&SerialFL);
-    SerialFL.begin(BT_SERIAL_BAUD);
+    wheelScales[0].setStream(&streamReceiver.getStream(0));
 
     wheelScales[1].applyPositionOffset(240/2, 0);
     wheelScales[1].setName("Front Right");
-    wheelScales[1].setStream(&SerialFR);
-    SerialFR.begin(BT_SERIAL_BAUD);
+    wheelScales[1].setStream(&streamFR);
 
     wheelScales[2].applyPositionOffset(0, 320/2);
     wheelScales[2].setName("Rear Left");
-    wheelScales[2].setStream(&SerialRL);
-    SerialRL.begin(BT_SERIAL_BAUD);
+    wheelScales[2].setStream(&streamRL);
 
     wheelScales[3].applyPositionOffset(240/2, 320/2);
     wheelScales[3].setName("Rear Right");
-    wheelScales[3].setStream(&SerialRR);
-    SerialRR.begin(BT_SERIAL_BAUD);
+    wheelScales[3].setStream(&streamReceiver.getStream(1));
 
 
     showAll();
@@ -543,7 +548,9 @@ void loop() {
         }
     }
 
-    while(loopTimer.read_ms() < LOOP_WAIT_TIME) {
+    if (loopTimer.read_ms() > LOOP_WAIT_TIME) {
+        loopTimer.reset();
+        loopTimer.start();
         for (uint8_t i = 0; i < SCALE_COUNT; ++i) {
             wheelScales[i].update();
         }

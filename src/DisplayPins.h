@@ -10,7 +10,7 @@
 #define TOUCH_IRQ 2
 
 
-#define SerialFL Serial1
+#define SerialReceiver Serial1
 // TX1 = 1
 // RX1 = 0
 
@@ -21,7 +21,3 @@
 // AltSoftSerial
 //#define SERIAL_RL_TX 21
 //#define SERIAL_RL_RX 20
-
-// SoftwareSerial
-#define SERIAL_RR_TX 17
-#define SERIAL_RR_RX 18
