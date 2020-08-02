@@ -13,6 +13,10 @@ HardwareSerial SerialReceiver(RECEIVER_SERIAL_RX, RECEIVER_SERIAL_TX);
 StreamRouter<2> serialRouter(SerialReceiver);
 
 void setup() {
+    // Print Version to Serial
+    Serial.begin(9600);
+    printf("TheWheelLoadScale by Timo Meyer - Router with Version: %s\n\n", SW_VERSION);
+
     SerialFL.begin(BT_SERIAL_BAUD);
     SerialRR.begin(BT_SERIAL_BAUD);
     SerialReceiver.begin(ROUTER_SERIAL_BAUD);
