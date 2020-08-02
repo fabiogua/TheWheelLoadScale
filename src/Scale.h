@@ -12,9 +12,10 @@
 #define LOADCELL_TARE_AFTER_TIME 5 // s
 
 //     SerialComm
-#define BT_SERIAL_TX PA_9
-#define BT_SERIAL_RX PA_10
+#define BT_SERIAL_TX PA_9 // Serial1
+#define BT_SERIAL_RX PA_10 // Serial1
 #define BT_SERIAL_BAUD 38400
+// Serial2 is PC Serial
 
 //   Settings
 #define SENDING_INTERVAL 200 // ms

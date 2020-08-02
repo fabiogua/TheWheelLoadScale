@@ -20,6 +20,7 @@
 
 //   Baud
 #define BT_SERIAL_BAUD 38400
+#define ROUTER_SERIAL_BAUD 115200
 
 
 // Globals
@@ -449,7 +450,7 @@ void setup() {
     reset.autoDraw(true);
 
     // Serial begin's
-    SerialReceiver.begin(BT_SERIAL_BAUD);
+    SerialReceiver.begin(ROUTER_SERIAL_BAUD);
     SerialFR.begin(BT_SERIAL_BAUD);
     SerialRL.begin(BT_SERIAL_BAUD);
 

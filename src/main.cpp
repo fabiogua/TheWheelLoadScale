@@ -7,6 +7,14 @@
     #error "Only one Device can be compiled at a time (?!?)"
 #endif
 
+#if defined(C_DISPLAY) && defined(C_ROUTER)
+    #error "Only one Device can be compiled at a time (?!?)"
+#endif
+
+#if defined(C_SCALE) && defined(C_ROUTER)
+    #error "Only one Device can be compiled at a time (?!?)"
+#endif
+
 
 #ifdef C_DISPLAY
     #include "Display.h"
@@ -15,4 +23,8 @@
 
 #ifdef C_SCALE
     #include "Scale.h"
+#endif
+
+#ifdef C_ROUTER
+    #include "Router.h"
 #endif

@@ -9,9 +9,9 @@
 
 
 template <uint16_t routedStreamCount>
-class StreamReceiver : public IContextedStream {
+class StreamRouter {
    public:
-    StreamReceiver(Stream& stream) : _physicalStream(stream) {}
+    StreamRouter(Stream& stream) : _physicalStream(stream) {}
 
     // ---------------------
     // IContextedStream
@@ -24,7 +24,7 @@ class StreamReceiver : public IContextedStream {
                 parsed_routed_stream_t parsed;
                 if (StreamRouterParser::parse(parsed, _inputBuffer, currentBufferSize)) {
                     if (parsed.context < routedStreamCount) {
-                        _routedStreams[context].write(parsed.parsedByte);
+                        _routedStreams[parsed.context].write(parsed.parsedByte);
                     }
                 }
 
@@ -47,7 +47,7 @@ class StreamReceiver : public IContextedStream {
      */
     void setStream(Stream& stream, write_context_t context) {
         if (context >= routedStreamCount)
-            return 0;
+            return;
 
         _routedStreams[context].setStream(stream, *this, context);
     }
@@ -78,9 +78,9 @@ class StreamReceiver : public IContextedStream {
     }
 
 
-    class RoutedSimpleStream : public SimpleStreamAdapter {
+    class RoutedSimpleStream {
        public:
-        void setStream(Stream& stream, IContextedStream& contextedWriteable, write_context_t context) {
+        void setStream(Stream& stream, StreamRouter& contextedWriteable, write_context_t context) {
             _physicalStream = &stream;
             _contextedWriteable = &contextedWriteable;
             _context = context;
@@ -93,7 +93,7 @@ class StreamReceiver : public IContextedStream {
 
         size_t write(uint8_t b) {
             if (_physicalStream != nullptr)
-                return _physicalStream->write();
+                return _physicalStream->write(b);
             
             return 0;
         }
@@ -110,7 +110,7 @@ class StreamReceiver : public IContextedStream {
 
        private:
         Stream* _physicalStream = nullptr;
-        IContextedStream* _contextedWriteable;
+        StreamRouter* _contextedWriteable;
         write_context_t _context = 0;
     };
 

@@ -39,7 +39,7 @@ class StreamRouterParser {
 
    private:
     static bool parseInt(uint16_t& dest, const char* buffer, uint16_t size) {
-        uint16_t returnVal;
+        uint16_t returnVal = 0;
 
         // Add Places before the dot
         uint16_t currentMulti = 1;

@@ -10,7 +10,7 @@
 
 
 template <uint16_t distantStreamCount>
-class StreamReceiver : public IContextedStream {
+class StreamReceiver {
    public:
     StreamReceiver(Stream& stream) : _physicalStream(stream) {
         for (write_context_t i = 0; i < distantStreamCount; ++i) {
@@ -78,7 +78,7 @@ class StreamReceiver : public IContextedStream {
 
     class VirtualSimpleStream : public ISimpleStream {
        public:
-        void setStreamReceiver(IContextedStream& contextedWriteable, write_context_t context) {
+        void setStreamReceiver(StreamReceiver& contextedWriteable, write_context_t context) {
             _contextedWriteable = &contextedWriteable;
             _context = context;
         }
@@ -118,7 +118,7 @@ class StreamReceiver : public IContextedStream {
 
        private:
         CircularBuffer<uint8_t, VIRTUAL_SIMPLE_STREAM_RECEIVE_BUFFER> _inputBuffer;
-        IContextedStream* _contextedWriteable;
+        StreamReceiver* _contextedWriteable;
         write_context_t _context = 0;
     };
 
