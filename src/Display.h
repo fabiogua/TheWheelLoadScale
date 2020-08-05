@@ -483,6 +483,8 @@ bool touchedBefore = false;
 
 
 void loop() {
+    streamReceiver.update();
+
     if (currentState == State_Show_All) {
         updateAll();
 
