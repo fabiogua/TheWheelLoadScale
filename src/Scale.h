@@ -7,21 +7,21 @@
 //   Pins
 //     LoadCells
 #define LOADCELL_DOUT_PIN 3
-#define LOADCELL_SCK_PIN  2
-#define STD_SCALE_FACTOR  1
+#define LOADCELL_SCK_PIN 2
+#define STD_SCALE_FACTOR 1
 #define LOADCELL_TARE_AFTER_TIME 5 // s
 
 //     SerialComm
-#define BT_SERIAL_TX PA_9 // Serial1
+#define BT_SERIAL_TX PA_9  // Serial1
 #define BT_SERIAL_RX PA_10 // Serial1
 #define BT_SERIAL_BAUD 38400
 // Serial2 is PC Serial
 
 //   Settings
-#define SENDING_INTERVAL 200 // ms
-#define MIN_BOUNDARY_TO_CHANGE_CAL_SIGN 1 // if scaleFactor lower than this, invert -> 0.99... would result in -1
+#define SENDING_INTERVAL 200                  // ms
+#define MIN_BOUNDARY_TO_CHANGE_CAL_SIGN 1     // if scaleFactor lower than this, invert -> 0.99... would result in -1
 #define INIT_CALIBRATION_INCREASE_FACTOR 0.05 // %
-#define CALIBRATION_FACTOR_INCREMENT 0.1 // %
+#define CALIBRATION_FACTOR_INCREMENT 0.1      // %
 
 /*
     Protocoll:
@@ -47,7 +47,8 @@
             \n == new Line/End of sentence
 */
 
-enum eepromAddresses : uint16_t {
+enum eepromAddresses : uint16_t
+{
     SaveAddrCalibration = 0
 };
 
@@ -64,7 +65,8 @@ void sendSentence();
 void gotChar(char command);
 void saveScaleFactor();
 
-void setup() {
+void setup()
+{
     // Print Version to Serial
     Serial.begin(9600);
     printf("TheWheelLoadScale by Timo Meyer - Scale with Version: %s\n\n", SW_VERSION);
@@ -83,20 +85,23 @@ void setup() {
     sendingTimer.start();
 }
 
-
-void loop() {
+void loop()
+{
     // Receiving BT
-    while (SerialBT.available()) {
+    while (SerialBT.available())
+    {
         gotChar(SerialBT.read());
     }
 
     // Receiving PC
-    while (Serial.available()) {
+    while (Serial.available())
+    {
         gotChar(Serial.read());
     }
 
     // Sending
-    if (sendingTimer.read_ms() >= SENDING_INTERVAL) {
+    if (sendingTimer.read_ms() >= SENDING_INTERVAL)
+    {
         sendingTimer.reset();
         sendingTimer.start();
 
@@ -104,71 +109,86 @@ void loop() {
     }
 }
 
-inline void saveScaleFactor() {
+inline void saveScaleFactor()
+{
     EEPROM.put(SaveAddrCalibration, scaleFactor);
 }
 
-void gotChar(char command) { // -> incoming protocoll parser
-    switch(command) {
-        case '+': {
-            if (scaleFactor < 0) {
-                scaleFactor -= scaleFactor * calibrationIncreaseFactor;
-                if (scaleFactor > (-1 * MIN_BOUNDARY_TO_CHANGE_CAL_SIGN))
-                    scaleFactor = MIN_BOUNDARY_TO_CHANGE_CAL_SIGN;
-            } else {
-                scaleFactor += scaleFactor * calibrationIncreaseFactor;
-            }
+void gotChar(char command)
+{ // -> incoming protocoll parser
+    switch (command)
+    {
+    case '+':
+    {
+        if (scaleFactor < 0)
+        {
+            scaleFactor -= scaleFactor * calibrationIncreaseFactor;
+            if (scaleFactor > (-1 * MIN_BOUNDARY_TO_CHANGE_CAL_SIGN))
+                scaleFactor = MIN_BOUNDARY_TO_CHANGE_CAL_SIGN;
+        }
+        else
+        {
+            scaleFactor += scaleFactor * calibrationIncreaseFactor;
+        }
 
-            loadcell.set_scale(scaleFactor);
-            saveScaleFactor();
-            break;
+        loadcell.set_scale(scaleFactor);
+        saveScaleFactor();
+        break;
+    }
+    case '-':
+    {
+        if (scaleFactor > 0)
+        {
+            scaleFactor -= scaleFactor * calibrationIncreaseFactor;
+            if (scaleFactor < MIN_BOUNDARY_TO_CHANGE_CAL_SIGN)
+                scaleFactor = -1 * MIN_BOUNDARY_TO_CHANGE_CAL_SIGN;
         }
-        case '-': {
-            if (scaleFactor > 0) {
-                scaleFactor -= scaleFactor * calibrationIncreaseFactor;
-                if (scaleFactor < MIN_BOUNDARY_TO_CHANGE_CAL_SIGN)
-                    scaleFactor = -1 * MIN_BOUNDARY_TO_CHANGE_CAL_SIGN;
-            } else {
-                scaleFactor += scaleFactor * calibrationIncreaseFactor;
-            }
+        else
+        {
+            scaleFactor += scaleFactor * calibrationIncreaseFactor;
+        }
 
-            loadcell.set_scale(scaleFactor);
-            saveScaleFactor();
-            break;
-        }
-        case 'u':
-            calibrationIncreaseFactor += calibrationIncreaseFactor * CALIBRATION_FACTOR_INCREMENT;
-            break;
-        case 'd':
-            calibrationIncreaseFactor -= calibrationIncreaseFactor * CALIBRATION_FACTOR_INCREMENT;
-            break;
-        case 'r': {
-            loadcell.set_scale();
-            scaleFactor = 1.0;
-            saveScaleFactor();
-            calibrationIncreaseFactor = INIT_CALIBRATION_INCREASE_FACTOR;
-            break;
-        }
-        case 't':
-            loadcell.tare();
-            break;
-        case 'p':
-            pcOutput = !pcOutput;
-            break;
+        loadcell.set_scale(scaleFactor);
+        saveScaleFactor();
+        break;
+    }
+    case 'u':
+        calibrationIncreaseFactor += calibrationIncreaseFactor * CALIBRATION_FACTOR_INCREMENT;
+        break;
+    case 'd':
+        calibrationIncreaseFactor -= calibrationIncreaseFactor * CALIBRATION_FACTOR_INCREMENT;
+        break;
+    case 'r':
+    {
+        loadcell.set_scale();
+        scaleFactor = 0.0003846f;
+        saveScaleFactor();
+        calibrationIncreaseFactor = INIT_CALIBRATION_INCREASE_FACTOR;
+        break;
+    }
+    case 't':
+        loadcell.tare();
+        break;
+    case 'p':
+        pcOutput = !pcOutput;
+        break;
     }
 }
 
-void sendSentence() {
-    float gotGramms = loadcell.get_units(10);
+void sendSentence()
+{
+    float gotGramms = loadcell.get_units(4);
 
     // Prep sentence
     char buffer[100];
-    sprintf (buffer, "W%fC%fF%f\n", gotGramms, scaleFactor, calibrationIncreaseFactor);
+    // sprintf(buffer, "W%fC%fF%f\n", gotGramms, scaleFactor, calibrationIncreaseFactor);
+    sprintf(buffer, "%.3fKg\n", gotGramms / -24078.89);
 
     // Send over BT
     SerialBT.print(buffer);
 
-    if (pcOutput) {
+    if (pcOutput)
+    {
         // Send optionally to PC too
         Serial.print(buffer);
     }
